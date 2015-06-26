@@ -1,0 +1,9 @@
+exportPattern("^[[:alpha:]]+")
+import(doParallel)
+import(parallel)
+import(foreach)
+importFrom("matrixStats", rowProds)
+importFrom("matrixStats", colProds)
+importFrom("matrixStats", colAlls)
+import(MASS)
+
