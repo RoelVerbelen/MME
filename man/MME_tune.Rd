@@ -10,50 +10,85 @@ MME_tune(lower, upper = lower, trunclower = rep(0, ncol(as.matrix(lower))),
   beta_tol = 10^(-5), print = TRUE, file = "log.txt", max_iter = Inf)
 }
 \arguments{
-\item{lower}{A matrix specifying the lower censoring points, observations in
+\item{lower,upper}{Matrix specifying the lower and upper censoring points, observations in
 rows, dimensions in coloms.}
 
-\item{upper}{A matrix specifying the upper censoring points, observations in
-rows, dimensions in coloms.}
+\item{trunclower,truncupper}{Numeric vector specifying the lower and upper truncation
+points in each dimension.}
 
-\item{trunclower}{A vector specifying the lower truncation points in each
-dimension.}
+\item{M}{Numeric vector of values for the tuning parameter M.}
 
-\item{truncupper}{A vector specifying the upper truncation points in each
-dimension.}
-
-\item{M}{A vector of values for the tuning parameter M.}
-
-\item{s}{A vector of values for the tuning parameter s (the spread).}
+\item{s}{Numeric vector of values for the tuning parameter s (the spread).}
 
 \item{nCores}{Number of cores available for parallel computation.}
 
 \item{criterium}{Character vector specifying information criterium to use,
 either "AIC" or "BIC".}
 
-\item{eps}{Covergence threshold used in the EM algorithm.}
+\item{eps}{Numeric: covergence threshold used in the EM algorithm.}
 
-\item{beta_tol}{Threshold for the mixing weights below which the
+\item{beta_tol}{Numeric: threshold for the mixing weights below which the
 corresponding shape parameter vector is considered neglectable.}
 
-\item{print}{Bool: print intermediate results, either TRUE or FALSE.}
+\item{print}{Logical: print intermediate results, either TRUE or FALSE.}
 
 \item{file}{If print is TRUE, specify file name.}
 
 \item{max_iter}{Maximum number of iterations in a single EM algorithm.}
 }
 \value{
-A list containing:
-\describe{
-   \item{best_model}{The final MME, judged to be the best according to the criterium used. Value is a list.}
-   \item{performances}{A matrix summarizing the performance of the different fitted MME models (M, s, criterium, R).}
-   \item{all_model}{A list containing all fitted MME models.}
-}
+\code{MME_tune} returns a \code{list}  with the following objects:
+  \describe{
+  \item{best_model}{The final MME, judged to be the best according
+  to the criterium used. Value is a list.}
+  \item{performances}{A matrix
+  summarizing the performance of the different fitted MME models (M, s,
+  criterium, R).}
+  \item{all_model}{A list containing all fitted MME models.}
+  }
 }
 \description{
 Fits univariate and multivariate mixtures of Erlang distributions to possibly
 censored and/or truncated data. The censoring and/or truncation can be left,
 right or interval.
+}
+\details{
+\code{MME_tune} implements the estimation procedure for univariate and
+   multivariate mixtures of Erlangs (MME) by repeatedly using the EM algorithm. More information
+   on the initialization and adjustment strategy for the shape parameter vectors based on an
+   information criterium (AIC and BIC implemented) can be found in Verbelen et al. (2015).
+
+   The data can be censored and/or truncated. The censoring status of a particular observation
+   in a certain dimension is determined as follows:
+   \itemize{
+       \item Uncensored: lower and upper are equal (upper is set equal to lower by default).
+       \item Left Censored: lower is missing (NA) or equal to trunclower, but upper is present.
+       \item Right Censored: lower is present, but upper is missing (NA) or equal to truncupper.
+       \item Interval Censored: lower and upper are present and different.
+   }
+   E.g.: lower[1, ] = c(2, NA, 4, 5) and upper[1, ] = c(2, 3, NA, 6);
+   specifies a first four-dimensional observation having an observed event at 2 in dimension 1,
+   left censoring at 3 in dimension 2,
+   right censoring at 4 in dimension 3,
+   and interval censoring at [5,6] in dimension 4.
+
+   The truncation status in a certain dimension is determined as follows:
+   \itemize{
+       \item Untruncated: trunclower equals 0 and truncupper equals Inf (default).
+       \item Left Truncated: trunclower is a nonzero numeric and truncupper is Inf.
+       \item Right Truncated: trunclower is 0 and truncupper is a nonzero numeric.
+       \item Interval Truncated: trunclower and truncupper are present and different.
+   }
+   E.g.: trunclower = c(0, 1, 0, 1) and truncupper = c(Inf, Inf, 10, 10);
+   specifies no truncation in dimension 1,
+   left truncation at 1 in dimension 2,
+   right truncation at 10 in dimension 3,
+   and interval truncation at [1, 10] in dimension 4.
+
+   The lower and upper truncation points are fixed, i.e. the same for all observations.
+
+   For all observations and across all dimensions it must hold that
+   trunclower <= lower <= upper <= truncupper.
 }
 \examples{
 \dontrun{
@@ -63,5 +98,14 @@ truncupper = c(Inf, Inf), M = c(5, 10, 20), s = c(seq(10, 100, 10), 200),
 nCores = detectCores(), criterium = "BIC", eps = 1e-03,
  beta_tol = 10^(-5), print=TRUE, file="log.txt", max_iter = Inf)
 }
+}
+\references{
+Verbelen, R., Gong, L., Antonio, K., Badescu, A., and Lin, X. S.
+  (2015). Fitting mixtures of Erlangs to censored and truncated data using
+  the EM algorithm. ASTIN Bulletin. Accepted for publication.
+
+  Verbelen, R., Antonio, K., and Claeskens, G. (2015). Multivariate mixtures
+  of Erlangs for density estimation under censoring and truncation. Submitted
+  for publication.
 }
 

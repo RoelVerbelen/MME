@@ -4,6 +4,8 @@ Title: Multivariate Mixtures of Erlangs
 Version: 0.1
 Date: 2015-06-26
 Authors@R: person("Roel", "Verbelen", email = "roel.verbelen@gmail.com", role = c("aut", "cre"))
+Author: Roel Verbelen [aut, cre]
+Maintainer: Roel Verbelen <roel.verbelen@gmail.com>
 Description: Fits univariate and multivariate mixtures of Erlang distributions to possibly censored and/or truncated data.
 License: GPL-2
 LazyData: TRUE
