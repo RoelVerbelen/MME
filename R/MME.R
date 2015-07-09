@@ -307,26 +307,39 @@
 
 
 
-#' @title Fits univariate and multivariate mixtures of Erlang distributions to possibly censored and/or truncated data.
-#'
-#' @param lower A matrix specifying the lower censoring points, observations in rows, dimensions in coloms.
-#' @param upper A matrix specifying the upper censoring points, observations in rows, dimensions in coloms.
-#' @param trunclower A vector specifying the lower truncation points in each dimension.
-#' @param truncupper A vector specifying the upper truncation points in each dimension.
+#' Fit mixture of Erlangs
+#' 
+#' Fits univariate and multivariate mixtures of Erlang distributions to possibly
+#' censored and/or truncated data. The censoring and/or truncation can be left,
+#' right or interval.
+#' 
+#' @param lower A matrix specifying the lower censoring points, observations in
+#'   rows, dimensions in coloms.
+#' @param upper A matrix specifying the upper censoring points, observations in
+#'   rows, dimensions in coloms.
+#' @param trunclower A vector specifying the lower truncation points in each
+#'   dimension.
+#' @param truncupper A vector specifying the upper truncation points in each
+#'   dimension.
 #' @param M A vector of values for the tuning parameter M.
 #' @param s A vector of values for the tuning parameter s (the spread).
 #' @param nCores Number of cores available for parallel computation.
-#' @param criterium Character vector specifying information criterium to use, either "AIC" or "BIC".
+#' @param criterium Character vector specifying information criterium to use,
+#'   either "AIC" or "BIC".
 #' @param eps Covergence threshold used in the EM algorithm.
-#' @param beta_tol Threshold for the mixing weights below which the corresponding shape parameter vector is considered neglectable.
+#' @param beta_tol Threshold for the mixing weights below which the
+#'   corresponding shape parameter vector is considered neglectable.
 #' @param print Bool: print intermediate results, either TRUE or FALSE.
 #' @param file If print is TRUE, specify file name.
 #' @param max_iter Maximum number of iterations in a single EM algorithm.
-#'
-#' @return A list containing:
-#' best_model: The final MME, judged to be the best according to the criterium used. Value is a list.
-#' performances: A matrix summarizing the performance of the different fitted MME models (M, s, criterium, R).
-#' all_model: A list containing all fitted MME models.
+#'   
+#' @return A list containing: 
+#' \describe{
+#'    \item{best_model}{The final MME, judged to be the best according to the criterium used. Value is a list.}
+#'    \item{performances}{A matrix summarizing the performance of the different fitted MME models (M, s, criterium, R).}
+#'    \item{all_model}{A list containing all fitted MME models.}
+#' }
+#' 
 #' @examples
 #' \dontrun{
 #' library(MASS)

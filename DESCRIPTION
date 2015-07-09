@@ -1,13 +1,17 @@
 Package: MME
 Type: Package
-Title: Multivariate mixtures of Erlangs
+Title: Multivariate Mixtures of Erlangs
 Version: 0.1
 Date: 2015-06-26
-Author: Roel Verbelen
-Maintainer: <roel.verbelen@gmail.com>
+Authors@R: person("Roel", "Verbelen", email = "roel.verbelen@gmail.com", role = c("aut", "cre"))
 Description: Fits univariate and multivariate mixtures of Erlang distributions to possibly censored and/or truncated data.
 License: GPL-2
 LazyData: TRUE
-Depends: R (>= 3.0.0),  MASS
-Imports: matrixStats, doParallel, parallel, foreach
-
+Depends: 
+    R (>= 3.2.0), 
+    MASS
+Imports: 
+    doParallel,
+    foreach,
+    matrixStats (>= 0.14.2), 
+    parallel
