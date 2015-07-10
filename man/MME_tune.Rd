@@ -6,7 +6,7 @@
 \usage{
 MME_tune(lower, upper = lower, trunclower = rep(0, ncol(as.matrix(lower))),
   truncupper = rep(Inf, ncol(as.matrix(lower))), M = 10, s = 100,
-  nCores = detectCores(), criterium = "BIC", eps = 0.001,
+  nCores = parallel::detectCores(), criterium = "BIC", eps = 0.001,
   beta_tol = 10^(-5), print = TRUE, file = "log.txt", max_iter = Inf)
 }
 \arguments{
@@ -92,12 +92,12 @@ right or interval.
 }
 \examples{
 \dontrun{
-library(MASS)
-MME_tune(lower = geyser, upper = geyser, trunclower = c(0, 0),
-truncupper = c(Inf, Inf), M = c(5, 10, 20), s = c(seq(10, 100, 10), 200),
-nCores = detectCores(), criterium = "BIC", eps = 1e-03,
- beta_tol = 10^(-5), print=TRUE, file="log.txt", max_iter = Inf)
-}
+       data(geyser, package = "MASS")
+       MME_tune(lower = geyser, upper = geyser, trunclower = c(0, 0),
+       truncupper = c(Inf, Inf), M = c(5, 10, 20), s = c(seq(10, 100, 10), 200),
+       nCores = parallel::detectCores(), criterium = "BIC", eps = 1e-03,
+       beta_tol = 10^(-5), print=TRUE, file="log.txt", max_iter = Inf)
+   }
 }
 \references{
 Verbelen, R., Gong, L., Antonio, K., Badescu, A., and Lin, X. S.
