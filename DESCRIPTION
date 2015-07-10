@@ -10,10 +10,10 @@ Description: Fits univariate and multivariate mixtures of Erlang distributions t
 License: GPL-2
 LazyData: TRUE
 Depends: 
-    R (>= 3.2.0), 
-    MASS
+    R (>= 3.2.0)
 Imports: 
     doParallel,
     foreach,
+    MASS,
     matrixStats (>= 0.14.2), 
     parallel

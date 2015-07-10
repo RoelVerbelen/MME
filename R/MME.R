@@ -2,6 +2,9 @@
 ## Fitting procedure for multivariate mixtures of Erlangs (MME) to censored and truncated data ##
 #################################################################################################
 
+#' @import foreach
+NULL
+
 ## Initial values
 
 # supply the maximum initial number of shapes M in each dimension and the spread factor
@@ -39,12 +42,12 @@
       }
       indicator[[j]][is.na(indicator[[j]])] <- 1/length(r[[j]])
     }
-    alpha <- alpha + rowProds(as.matrix(expand.grid(indicator)))
+    alpha <- alpha + matrixStats::rowProds(as.matrix(expand.grid(indicator)))
   }
   shape <- shape[alpha>0, , drop = FALSE]
   alpha <- alpha[alpha>0]/sum(alpha)
   # alpha to beta
-  t_probabilities <- colProds(matrix( pgamma(truncupper, shape=t(shape), scale=theta) - pgamma(trunclower, shape=t(shape), scale=theta), dim(shape)[2], dim(shape)[1]))
+  t_probabilities <- matrixStats::colProds(matrix( pgamma(truncupper, shape=t(shape), scale=theta) - pgamma(trunclower, shape=t(shape), scale=theta), dim(shape)[2], dim(shape)[1]))
   beta <- alpha * t_probabilities / sum(alpha*t_probabilities)
   list(theta=theta, shape=shape, alpha=alpha, beta=beta)
 }
@@ -63,7 +66,7 @@
 .MME_f <- function(lower, upper, shape, theta){
   f = matrix(0, nrow = nrow(lower), ncol = nrow(shape))
   for(j in 1:nrow(shape)){
-    f[,j] <- rowProds(ifelse(lower == upper, t(dgamma(t(lower), shape=shape[j,], scale=theta)), t(pgamma(t(upper), shape=shape[j,], scale=theta)) - t(pgamma(t(lower), shape=shape[j,], scale=theta))))
+    f[,j] <- matrixStats::rowProds(ifelse(lower == upper, t(dgamma(t(lower), shape=shape[j,], scale=theta)), t(pgamma(t(upper), shape=shape[j,], scale=theta)) - t(pgamma(t(lower), shape=shape[j,], scale=theta))))
   }
   f
 }
@@ -140,7 +143,7 @@
   # multivariate Erlang density/probability for each observation and shape combination
   f <- .MME_f(lower, upper, shape, theta)
   # multivariate Erlang truncations probabilities
-  t_probabilities <- colProds(matrix( pgamma(truncupper, shape=t(shape), scale=theta) - pgamma(trunclower, shape=t(shape), scale=theta) , dim(shape)[2], dim(shape)[1]))
+  t_probabilities <- matrixStats::colProds(matrix( pgamma(truncupper, shape=t(shape), scale=theta) - pgamma(trunclower, shape=t(shape), scale=theta) , dim(shape)[2], dim(shape)[1]))
   loglikelihood <- .MME_loglikelihood(f, beta, t_probabilities)
   old_loglikelihood <- -Inf
   history_loglikelihood <- loglikelihood
@@ -162,7 +165,7 @@
     # multivariate Erlang density/probability for each observation and shape combination
     f <- .MME_f(lower, upper, shape, theta)
     # multivariate Erlang truncations probabilities
-    t_probabilities <- colProds(matrix( pgamma(truncupper, shape=t(shape), scale=theta) - pgamma(trunclower, shape=t(shape), scale=theta) , dim(shape)[2], dim(shape)[1]))
+    t_probabilities <- matrixStats::colProds(matrix( pgamma(truncupper, shape=t(shape), scale=theta) - pgamma(trunclower, shape=t(shape), scale=theta) , dim(shape)[2], dim(shape)[1]))
     loglikelihood <- .MME_loglikelihood(f, beta, t_probabilities)
     if(print) print(loglikelihood)
     history_loglikelihood <- c(history_loglikelihood, loglikelihood)
@@ -198,7 +201,7 @@
           new_shape <- shape
           new_shape[i,j] <- new_shape[i,j]+1
           # Test for new shape combination
-          if( any(colAlls(t(shape) == new_shape[i,])) ) break
+          if( any(matrixStats::colAlls(t(shape) == new_shape[i,])) ) break
           fit <- .MME_em(lower, upper, trunclower, truncupper, theta, new_shape, beta, eps, print=FALSE, beta_tol, max_iter)
           new_loglikelihood <- fit$loglikelihood
           if(new_loglikelihood > loglikelihood + eps){
@@ -224,7 +227,7 @@
         repeat{
           new_shape <- shape
           new_shape[i,j] <- new_shape[i,j]-1
-          if( any(colAlls(t(shape) == new_shape[i,])) | new_shape[i,j]==0 ) break
+          if( any(matrixStats::colAlls(t(shape) == new_shape[i,])) | new_shape[i,j]==0 ) break
           fit <- .MME_em(lower, upper, trunclower, truncupper, theta, new_shape, beta, eps, print=FALSE, beta_tol, max_iter)
           new_loglikelihood <- fit$loglikelihood
           if(new_loglikelihood > loglikelihood + eps){
@@ -388,23 +391,24 @@
 #'   
 #' @examples
 #'    \dontrun{
-#'        data(geyser) # load geyser data from library MASS
+#'        data(geyser, package = "MASS")
 #'        MME_tune(lower = geyser, upper = geyser, trunclower = c(0, 0),
 #'        truncupper = c(Inf, Inf), M = c(5, 10, 20), s = c(seq(10, 100, 10), 200),
-#'        nCores = detectCores(), criterium = "BIC", eps = 1e-03,
+#'        nCores = parallel::detectCores(), criterium = "BIC", eps = 1e-03,
 #'        beta_tol = 10^(-5), print=TRUE, file="log.txt", max_iter = Inf)
 #'    }
-MME_tune <- function(lower, upper = lower, trunclower = rep(0, ncol(as.matrix(lower))), truncupper = rep(Inf, ncol(as.matrix(lower))), M = 10, s = 100, nCores = detectCores(), criterium = "BIC", eps = 1e-03, beta_tol = 10^(-5), print=TRUE, file="log.txt", max_iter = Inf){
+#' @export
+MME_tune <- function(lower, upper = lower, trunclower = rep(0, ncol(as.matrix(lower))), truncupper = rep(Inf, ncol(as.matrix(lower))), M = 10, s = 100, nCores = parallel::detectCores(), criterium = "BIC", eps = 1e-03, beta_tol = 10^(-5), print=TRUE, file="log.txt", max_iter = Inf){
   tuning_parameters <- expand.grid(M, s)
-  cl <- makePSOCKcluster(nCores)
-  clusterExport(cl, c("lower", "upper", "trunclower", "truncupper", "tuning_parameters", "criterium", "eps", "print", "beta_tol", "max_iter", ".MME_initial", ".MME_loglikelihood", ".MME_f", ".Estep_z", ".Estep_EX", ".Mstep_T_j", ".Mstep_T", ".theta_nlm", ".MME_em", ".MME_shape_adj", ".MME_shape_red", ".MME_fit"), env = environment())
-  registerDoParallel(cl)
+  cl <- parallel::makePSOCKcluster(nCores)
+  parallel::clusterExport(cl, c("lower", "upper", "trunclower", "truncupper", "tuning_parameters", "criterium", "eps", "print", "beta_tol", "max_iter", ".MME_initial", ".MME_loglikelihood", ".MME_f", ".Estep_z", ".Estep_EX", ".Mstep_T_j", ".Mstep_T", ".theta_nlm", ".MME_em", ".MME_shape_adj", ".MME_shape_red", ".MME_fit"), env = environment())
+  doParallel::registerDoParallel(cl)
   if(print) writeLines(c(""), file)
   all_model <- foreach(i = 1:nrow(tuning_parameters), .packages='matrixStats', .errorhandling = 'remove') %dopar% {
     if(print) cat(paste("M = ", tuning_parameters[i, 1], ", s = ", tuning_parameters[i, 2], "\n"), file = file, append = TRUE)
     .MME_fit(lower, upper, trunclower, truncupper, M = tuning_parameters[i, 1], s = tuning_parameters[i, 2], criterium, eps, FALSE, beta_tol, max_iter)
   }
-  stopCluster(cl)
+  parallel::stopCluster(cl)
   performances <- data.frame(sapply(all_model, with, M), sapply(all_model, with, s),  sapply(all_model, function(x) with(x, get(criterium))), sapply(all_model, with, R))
   colnames(performances) <- c('M', 's', criterium, 'R')
   best_index <- which.min(performances[, criterium])
