@@ -9,7 +9,7 @@ Installation
 To install the current development version from github you need the [devtools package](http://cran.r-project.org/web/packages/devtools/index.html) and the other packages on which MME depends:
 
 ``` r
-install.packages(c("doParallel", "foreach", "matrixStats", "parallel"))
+install.packages(c("devtools", "doParallel", "foreach", "matrixStats", "parallel"))
 ```
 
 To install MME run:

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ---
 output:
   md_document:
@@ -31,41 +30,3 @@ To install MME run:
 library(devtools)
 install_github("RoelVerbelen/MME")
 ```
-
-||||||| merged common ancestors
-=======
----
-output:
-  md_document:
-    variant: markdown_github
----
-
-```{r, echo = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.path = "README-"
-)
-```
-
-# MME
-
-MME is an R package providing a method to fit univariate and multivariate mixtures of Erlang distributions to possibly censored and/or truncated data. The censoring and/or truncation can be left, right or interval.
-
-## Installation
-
-To install the current development version from github you need the [devtools package](http://cran.r-project.org/web/packages/devtools/index.html) and the other packages on which MME depends:
-
-```{r, eval = FALSE}
-install.packages(c("doParallel", "foreach", "matrixStats", "parallel"))
-```
-
-To install MME run:
-
-```{r, eval = FALSE}
-# install.packages("devtools")
-library(devtools)
-install_github("RoelVerbelen/MME")
-```
-
->>>>>>> 21c2c7567b42cacb3c6103c4f1a183752d694350
