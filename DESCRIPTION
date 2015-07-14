@@ -14,6 +14,7 @@ Depends:
 Imports: 
     doParallel,
     foreach,
-    MASS,
     matrixStats (>= 0.14.2), 
     parallel
+Suggests:
+    MASS
