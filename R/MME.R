@@ -1,7 +1,7 @@
 #################################################################################################
 ## Fitting procedure for multivariate mixtures of Erlangs (MME) to censored and truncated data ##
 #################################################################################################
-
+#test
 #' @import foreach 
 NULL
 
