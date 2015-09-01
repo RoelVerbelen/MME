@@ -474,15 +474,38 @@ MME_tune <- function(lower, upper = lower, trunclower = rep(0, ncol(as.matrix(lo
   
   
   tuning_parameters <- expand.grid(M, s)
-  cl <- parallel::makePSOCKcluster(nCores)
-  parallel::clusterExport(cl, c("lower", "upper", "trunclower", "truncupper", "tuning_parameters", "criterium", "eps", "print", "beta_tol", "max_iter", ".MME_initial", ".MME_loglikelihood", ".MME_f", ".Estep_z", ".Estep_EX", ".Mstep_T_j", ".Mstep_T", ".theta_nlm", ".MME_em", ".MME_shape_adj", ".MME_shape_red", ".MME_fit"), env = environment())
-  doParallel::registerDoParallel(cl)
-  if(print) writeLines(c(""), file)
-  all_model <- foreach::foreach(i = 1:nrow(tuning_parameters), .packages='matrixStats', .errorhandling = 'remove') %dopar% {
-    if(print) cat(paste("M = ", tuning_parameters[i, 1], ", s = ", tuning_parameters[i, 2], "\n"), file = file, append = TRUE)
-    .MME_fit(lower, upper, trunclower, truncupper, M = tuning_parameters[i, 1], s = tuning_parameters[i, 2], criterium, eps, FALSE, beta_tol, max_iter)
+  
+  if(nCores==1) {
+    
+    if(print) writeLines(c(""), file)
+    i <- 1
+    
+    all_model <- foreach::foreach(i = 1:nrow(tuning_parameters), 
+                         .export=c("lower", "upper", "trunclower", "truncupper", "tuning_parameters", "criterium", "eps", "print", "beta_tol", "max_iter", ".MME_initial", ".MME_loglikelihood", ".MME_f", ".Estep_z", ".Estep_EX", ".Mstep_T_j", ".Mstep_T", ".theta_nlm", ".MME_em", ".MME_shape_adj", ".MME_shape_red", ".MME_fit"), 
+                         .errorhandling = 'remove') %do% {
+                           if(print) cat(paste("M = ", tuning_parameters[i, 1], ", s = ", tuning_parameters[i, 2], "\n"), file = file, append = TRUE)
+                           suppressWarnings(.MME_fit(lower, upper, trunclower, truncupper, M = tuning_parameters[i, 1], s = tuning_parameters[i, 2], criterium, eps, FALSE))
+                         }
+    
+    
+  } else {
+    
+    
+    #######
+    # Original code
+    
+    cl <- parallel::makePSOCKcluster(nCores)
+    parallel::clusterExport(cl, c("lower", "upper", "trunclower", "truncupper", "tuning_parameters", "criterium", "eps", "print", "beta_tol", "max_iter", ".MME_initial", ".MME_loglikelihood", ".MME_f", ".Estep_z", ".Estep_EX", ".Mstep_T_j", ".Mstep_T", ".theta_nlm", ".MME_em", ".MME_shape_adj", ".MME_shape_red", ".MME_fit"), env = environment())
+    doParallel::registerDoParallel(cl)
+    if(print) writeLines(c(""), file)
+    i <- 1
+    all_model <- foreach::foreach(i = 1:nrow(tuning_parameters), .packages='matrixStats', .errorhandling = 'remove') %dopar% {
+      if(print) cat(paste("M = ", tuning_parameters[i, 1], ", s = ", tuning_parameters[i, 2], "\n"), file = file, append = TRUE)
+      .MME_fit(lower, upper, trunclower, truncupper, M = tuning_parameters[i, 1], s = tuning_parameters[i, 2], criterium, eps, FALSE, beta_tol, max_iter)
+    }
+    parallel::stopCluster(cl) 
   }
-  parallel::stopCluster(cl)
+  
   performances <- data.frame(sapply(all_model, with, M), sapply(all_model, with, s),  sapply(all_model, function(x) with(x, get(criterium))), sapply(all_model, with, R))
   colnames(performances) <- c('M', 's', criterium, 'R')
   best_index <- which.min(performances[, criterium])
