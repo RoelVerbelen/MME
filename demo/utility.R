@@ -83,7 +83,22 @@ ME_moment <- function(k, theta, shape, alpha){
 
 ## Value-at-Risk (VaR) or quantile function
 
-ME_VaR <- function(p, theta, shape, alpha, trunclower = 0, truncupper = Inf, interval = if(trunclower == 0 & truncupper == Inf){c(qgamma(p, shape = min(shape), scale = theta), qgamma(p, shape = max(shape), scale = theta))}else{c(trunclower, min(truncupper, trunclower + qgamma(p, shape = max(shape), scale = theta)))}, start = qgamma(p, shape = shape[which.max(alpha)], scale = theta)){
+ME_VaR <- function(p, theta, shape, alpha, trunclower = 0, truncupper = Inf, interval = NULL, start = NULL){
+  
+  if(is.null(interval)) {
+    if(trunclower == 0 & truncupper == Inf){
+      interval <- c(stats::qgamma(p, shape = min(shape), scale = theta), 
+                    stats::qgamma(p, shape = max(shape), scale = theta))
+      
+    } else{ 
+      interval <- c(trunclower, min(truncupper, trunclower + stats::qgamma(p, shape = max(shape), scale = theta)))
+    }
+  }
+  
+  if(is.null(start)) {
+    start <- stats::qgamma(p, shape = shape[which.max(alpha)], scale = theta)
+  }
+  
   if(p==1){
    return(Inf)
   }
