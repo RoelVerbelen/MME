@@ -308,6 +308,75 @@ NULL
   list(alpha = fit_adj$alpha, beta = fit_adj$beta, shape = fit_adj$shape, theta = fit_adj$theta, R=fit_adj$R, loglikelihood = fit_adj$loglikelihood, AIC=fit_adj$AIC, BIC=fit_adj$BIC, M=M, s=s, alpha_red = fit_red$alpha, beta_red = fit_red$beta, shape_red = fit_red$shape, theta_red = fit_red$theta, R_red=fit_red$R, loglikelihood_red = fit_red$loglikelihood, AIC_red=fit_red$AIC, BIC_red=fit_red$BIC, alpha_initial = initial$alpha, beta_initial = initial$beta, theta_initial = initial$theta, shape_initial = initial$shape)
 }
 
+# Check input arguments for MEtune
+.ME_checkInput  <- function(lower, upper, trunclower, truncupper) {
+  
+  nl <- length(lower)
+  nu <- length(upper)
+  ntl <- length(trunclower)
+  ntu <- length(truncupper)
+  
+  # Check lengths
+  if(nl!=1 & nu!=1 & nl!=nu) {
+    stop("lower and upper should have equal length if both do not have length 1.")
+  }
+  
+  if(ntl!=1 & ntu!=1 & ntl!=ntu) {
+    stop("trunclower and truncupper should have equal length if both do not have length 1.")
+  }
+  
+  
+  
+  # Check data types
+  if(any(!is.numeric(lower) & !is.na(lower))) {
+    stop("lower should consist of numerics and/or NAs.")
+  }
+  
+  if(any(!is.numeric(upper) & !is.na(upper))) {
+    stop("upper should consist of numerics and/or NAs.")
+  }
+  
+  if(any(!is.numeric(trunclower))) {
+    stop("trunclower should consist of numerics.")
+  }
+  
+  if(any(!is.numeric(truncupper))) {
+    stop("truncupper should consist of numerics.")
+  }
+  
+  
+  # Check inequalities
+  if(!all(is.na(lower)) & !all(is.na(upper))) {
+    if(any(lower>upper)) {
+      stop("lower should be smaller than (or equal to) upper.")
+    }
+  }
+  
+  
+  if(any(trunclower>truncupper)) {
+    stop("trunclower should be smaller than (or equal to) truncupper.")
+  }
+  
+  
+  if(any(!is.finite(trunclower) & !is.finite(truncupper))) {
+    stop("trunclower and truncupper cannot be both infinite.")
+  }
+  
+  if(!all(is.na(lower))) {
+    if(any(trunclower>lower)) {
+      stop("trunclower should be smaller than (or equal to) lower.")
+    }
+  }
+  
+  
+  if(!all(is.na(upper))) {
+    if(any(truncupper<upper)) {
+      stop("truncupper should be larger than (or equal to) cupper.")
+    }
+  }
+  
+}
+
 
 
 #' Fit mixture of Erlangs
@@ -399,16 +468,44 @@ NULL
 #'    }
 #' @export
 MME_tune <- function(lower, upper = lower, trunclower = rep(0, ncol(as.matrix(lower))), truncupper = rep(Inf, ncol(as.matrix(lower))), M = 10, s = 100, nCores = parallel::detectCores(), criterium = "BIC", eps = 1e-03, beta_tol = 10^(-5), print=TRUE, file="log.txt", max_iter = Inf){
+  
+  # Check input
+  .ME_checkInput(lower=lower, upper=upper, trunclower=trunclower, truncupper=truncupper)
+  
+  
   tuning_parameters <- expand.grid(M, s)
-  cl <- parallel::makePSOCKcluster(nCores)
-  parallel::clusterExport(cl, c("lower", "upper", "trunclower", "truncupper", "tuning_parameters", "criterium", "eps", "print", "beta_tol", "max_iter", ".MME_initial", ".MME_loglikelihood", ".MME_f", ".Estep_z", ".Estep_EX", ".Mstep_T_j", ".Mstep_T", ".theta_nlm", ".MME_em", ".MME_shape_adj", ".MME_shape_red", ".MME_fit"), env = environment())
-  doParallel::registerDoParallel(cl)
-  if(print) writeLines(c(""), file)
-  all_model <- foreach::foreach(i = 1:nrow(tuning_parameters), .packages='matrixStats', .errorhandling = 'remove') %dopar% {
-    if(print) cat(paste("M = ", tuning_parameters[i, 1], ", s = ", tuning_parameters[i, 2], "\n"), file = file, append = TRUE)
-    .MME_fit(lower, upper, trunclower, truncupper, M = tuning_parameters[i, 1], s = tuning_parameters[i, 2], criterium, eps, FALSE, beta_tol, max_iter)
+  
+  if(nCores==1) {
+    
+    if(print) writeLines(c(""), file)
+    i <- 1
+    
+    all_model <- foreach::foreach(i = 1:nrow(tuning_parameters), 
+                         .export=c("lower", "upper", "trunclower", "truncupper", "tuning_parameters", "criterium", "eps", "print", "beta_tol", "max_iter", ".MME_initial", ".MME_loglikelihood", ".MME_f", ".Estep_z", ".Estep_EX", ".Mstep_T_j", ".Mstep_T", ".theta_nlm", ".MME_em", ".MME_shape_adj", ".MME_shape_red", ".MME_fit"), 
+                         .errorhandling = 'remove') %do% {
+                           if(print) cat(paste("M = ", tuning_parameters[i, 1], ", s = ", tuning_parameters[i, 2], "\n"), file = file, append = TRUE)
+                           suppressWarnings(.MME_fit(lower, upper, trunclower, truncupper, M = tuning_parameters[i, 1], s = tuning_parameters[i, 2], criterium, eps, FALSE))
+                         }
+    
+    
+  } else {
+    
+    
+    #######
+    # Original code
+    
+    cl <- parallel::makePSOCKcluster(nCores)
+    parallel::clusterExport(cl, c("lower", "upper", "trunclower", "truncupper", "tuning_parameters", "criterium", "eps", "print", "beta_tol", "max_iter", ".MME_initial", ".MME_loglikelihood", ".MME_f", ".Estep_z", ".Estep_EX", ".Mstep_T_j", ".Mstep_T", ".theta_nlm", ".MME_em", ".MME_shape_adj", ".MME_shape_red", ".MME_fit"), env = environment())
+    doParallel::registerDoParallel(cl)
+    if(print) writeLines(c(""), file)
+    i <- 1
+    all_model <- foreach::foreach(i = 1:nrow(tuning_parameters), .packages='matrixStats', .errorhandling = 'remove') %dopar% {
+      if(print) cat(paste("M = ", tuning_parameters[i, 1], ", s = ", tuning_parameters[i, 2], "\n"), file = file, append = TRUE)
+      .MME_fit(lower, upper, trunclower, truncupper, M = tuning_parameters[i, 1], s = tuning_parameters[i, 2], criterium, eps, FALSE, beta_tol, max_iter)
+    }
+    parallel::stopCluster(cl) 
   }
-  parallel::stopCluster(cl)
+  
   performances <- data.frame(sapply(all_model, with, M), sapply(all_model, with, s),  sapply(all_model, function(x) with(x, get(criterium))), sapply(all_model, with, R))
   colnames(performances) <- c('M', 's', criterium, 'R')
   best_index <- which.min(performances[, criterium])

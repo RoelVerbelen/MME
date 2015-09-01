@@ -83,13 +83,31 @@ ME_moment <- function(k, theta, shape, alpha){
 
 ## Value-at-Risk (VaR) or quantile function
 
-ME_VaR <- function(p, theta, shape, alpha, trunclower = 0, truncupper = Inf, interval = if(trunclower == 0 & truncupper == Inf){c(qgamma(p, shape = min(shape), scale = theta), qgamma(p, shape = max(shape), scale = theta))}else{c(trunclower, min(truncupper, trunclower + qgamma(p, shape = max(shape), scale = theta)))}, start = qgamma(p, shape = shape[which.max(alpha)], scale = theta)){
+ME_VaR <- function(p, theta, shape, alpha, trunclower = 0, truncupper = Inf, interval = NULL, start = NULL){
+  
+  if(is.null(interval)) {
+    if(trunclower == 0 & truncupper == Inf){
+      interval <- c(stats::qgamma(p, shape = min(shape), scale = theta), 
+                    stats::qgamma(p, shape = max(shape), scale = theta))
+      
+    } else{ 
+      interval <- c(trunclower, min(truncupper, trunclower + stats::qgamma(p, shape = max(shape), scale = theta)))
+    }
+  }
+  
+  if(is.null(start)) {
+    start <- stats::qgamma(p, shape = shape[which.max(alpha)], scale = theta)
+  }
+  
+  
   if(p==1){
-   return(Inf)
-  }
+    # Fixed for truncation case
+    return(truncupper) 
+  } 
   if(length(shape) == 1 & trunclower == 0 & truncupper == Inf){
-    VaR <- qgamma(p, shape = shape, scale = theta)
-  }
+    VaR <- stats::qgamma(p, shape = shape, scale = theta)
+    return(VaR)
+  } 
   else{
     objective <- function(x){return(10000000*(ME_cdf(x, theta, shape, alpha, trunclower, truncupper)-p)^2)}
     VaR_nlm <- nlm(f = objective, p = start)
@@ -101,9 +119,10 @@ ME_VaR <- function(p, theta, shape, alpha, trunclower = 0, truncupper = Inf, int
     shape <- shape[order(shape)]
     VaR_nlm <-  vector("list", length(shape))
     VaR_optimize <-  vector("list", length(shape))
-    interval <- c(0, qgamma(p, shape, scale = theta))
+    # Fixed for truncation case
+    interval <- c(trunclower, pmin(truncupper, trunclower + stats::qgamma(p, shape, scale = theta)))
     for(i in 1:length(shape)){
-      VaR_nlm[[i]] <- nlm(f = objective, p = qgamma(p, shape = shape[i], scale = theta))
+      VaR_nlm[[i]] <- nlm(f = objective, p = stats::qgamma(p, shape = shape[i], scale = theta))
       VaR_optimize[[i]] <- optimize(f = objective, interval = interval[c(i, i+1)])
     }
     VaR_nlm <- sapply(VaR_nlm, with, estimate)[which.min(sapply(VaR_nlm, with, minimum))]
